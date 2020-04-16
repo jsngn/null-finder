@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 int validate_args(int argc, char *argv[]);
 int read_doc(char *filename, char **words);
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
 		return stat;
 	}
 	
-	char **words = calloc(100, sizeof(char*)); // All threads share	
+	char **words = calloc(100, sizeof(char*)); // All threads accumulate their results
 	read_doc(argv[1], words); // Each thread runs this probably
 
 	free(words);
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
 int validate_args(int argc, char *argv[])
 {
 	if (argc != 2) {
-		fprintf(stderr, "Invalid args.\n");
+		fprintf(stderr, "Invalid usage.\n");
 		return 1;
 	}
 
@@ -36,27 +37,39 @@ int validate_args(int argc, char *argv[])
 
 int read_doc(char *filename, char **words)
 {
-	FILE *fp;
-	//char **words = calloc(100, sizeof(char*)); // Starter size, realloc later if needed
-	int words_idx = 0;
-	char *read = malloc(sizeof(char) * 50);
+	FILE *fp; // File we read from
+	int words_idx = 0; // Iterate through words char ptr array
+	int c; // Each char we read from file, one at a time
+	char *word = calloc(50, sizeof(char));
+	*word = '\0'; // Just to be safe
 
 	if ((fp = fopen(filename, "r")) == NULL) {
 		fprintf(stderr, "File %s can't be opened for reading.\n", filename);
 		return 2;
 	}
 	
-	while (fgets(read, 50, fp) != NULL) {
-		char *word = malloc(sizeof(char*) * strlen(read));
-		strcpy(word, read);
-		words[words_idx] = word;
-		printf("%s\n", word);
-		words_idx++;
-		free(read);
+	while ((c = fgetc(fp)) != EOF) {
+		if (isspace(c) != 0) { // We've got a word
+			if (strlen(word) > 0) { // In case multiple whitespaces btwn words
+				*(words+words_idx) = word;
+				words_idx++;
+				word = calloc(50, sizeof(char));
+				*word = '\0';
+			}
+		}
+		else {
+			int len_so_far = strlen(word);
+			char n = (char) c;
+			// Concatenate to built word w/o strange char at end of each char
+			*(word+len_so_far) = n;
+			*(word+len_so_far+1) = '\0';
+		}
 	}
+	free(word); // For extra word allocated just before EOF
 
 	for (int i = 0; i < words_idx; i++) {
-		free(words[words_idx]);
+		printf("%ld %s\n", strlen(*(words+i)), *(words+i));
+		free(*(words+i));
 	}
 
 	fclose(fp);
