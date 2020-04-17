@@ -7,9 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
+#include "thread_params.h"
 
 int validate_args(int argc, char *argv[]);
-int read_doc(char *filename, char **words);
+void *read_doc(void *ptr);
+int start_threads(int argc, char *argv[], char **words);
 
 int main(int argc, char *argv[])
 {
@@ -19,8 +22,9 @@ int main(int argc, char *argv[])
 	}
 	
 	char **words = calloc(100, sizeof(char*)); // All threads accumulate their results
-	read_doc(argv[1], words); // Each thread runs this probably
+	//read_doc(argv[1], words); // Each thread runs this probably
 
+	start_threads(argc, argv, words);
 	free(words);
 	return 0;
 }
@@ -35,18 +39,56 @@ int validate_args(int argc, char *argv[])
 	return 0;
 }
 
-int read_doc(char *filename, char **words)
+int start_threads(int argc, char *argv[], char **words)
 {
-	FILE *fp; // File we read from
+	pthread_t **threads = calloc(1, sizeof(pthread_t*));
+	void **returns = calloc(1, sizeof(void*));
+	int threads_idx = 0;
+	FILE *fp;
+
+	if ((fp = fopen(argv[1], "r")) == NULL) {
+		fprintf(stderr, "File %s can't be opened for reading.\n", argv[1]);
+		return 2;
+	}
+
+	// 1st thread as test
+	threads[threads_idx] = malloc(sizeof(pthread_t));
+	thread_params_t *params = thread_params_new(words, fp);
+	if (params == NULL) {
+		return 3;
+	}
+	pthread_create(threads[threads_idx], NULL, read_doc, params);
+	
+	for (int i = 0; i < threads_idx + 1; i++) {
+		pthread_join((*threads[threads_idx]), returns[threads_idx]);
+	}
+	free(params); // Contents are free'd later
+	fclose(fp);
+	for (int i = 0; i < threads_idx + 1; i++) {
+		if (returns[i] != NULL) {
+			free(returns[i]);
+		}
+	}
+	free(returns);
+	for (int i = 0; i < threads_idx + 1; i++) {
+		if (threads[threads_idx] != NULL) {
+			free(threads[threads_idx]);
+		}
+	}
+	free(threads);
+
+	return 0;
+}
+
+void *read_doc(void *ptr)
+{
+	thread_params_t *params = (thread_params_t *)ptr;
+	char **words = thread_params_get_words(params);
+	FILE *fp = thread_params_get_fp(params); // File we read from
 	int words_idx = 0; // Iterate through words char ptr array
 	int c; // Each char we read from file, one at a time
 	char *word = calloc(50, sizeof(char));
 	*word = '\0'; // Just to be safe
-
-	if ((fp = fopen(filename, "r")) == NULL) {
-		fprintf(stderr, "File %s can't be opened for reading.\n", filename);
-		return 2;
-	}
 	
 	while ((c = fgetc(fp)) != EOF) {
 		if (isspace(c) != 0) { // We've got a word
@@ -72,6 +114,5 @@ int read_doc(char *filename, char **words)
 		free(*(words+i));
 	}
 
-	fclose(fp);
-	return 0;
+	return NULL;
 }
