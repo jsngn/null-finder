@@ -1,10 +1,10 @@
 # Makefile for project
 # Josephine Nguyen, April 2020
 
-PROG = doc_parser
-OBJS = doc_parser.o thread_params.o
+PROG = find_null
+OBJS = find_null.o ./resources/hashtable.o
 
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -pthread
+CFLAGS = -Wall -pedantic -std=c11 -ggdb -I./resources
 CC = gcc
 
 $(PROG): $(OBJS)

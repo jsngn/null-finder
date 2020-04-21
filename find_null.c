@@ -8,11 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <pthread.h>
-#include "thread_params.h"
+#include "hashtable.h"
 
 int validate_args(int argc, char *argv[]);
-void *read_doc(void *ptr);
+int read_doc(char *file, char **words);
 
 int main(int argc, char *argv[])
 {
@@ -22,9 +21,8 @@ int main(int argc, char *argv[])
 	}
 	
 	char **words = calloc(100, sizeof(char*));
-	//read_doc(argv[1], words);
+	read_doc(argv[1], words);
 
-	start_threads(argc, argv, words);
 	free(words);
 	return 0;
 }
@@ -39,16 +37,18 @@ int validate_args(int argc, char *argv[])
 	return 0;
 }
 
-void *read_doc(void *ptr)
+int read_doc(char *file, char **words)
 {
-	thread_params_t *params = (thread_params_t *)ptr;
-	char **words = thread_params_get_words(params);
-	FILE *fp = thread_params_get_fp(params); // File we read from
+	FILE *fp; // File we read from
 	int words_idx = 0; // Iterate through words char ptr array
 	int c; // Each char we read from file, one at a time
 	char *word = calloc(50, sizeof(char));
 	*word = '\0'; // Just to be safe
 	
+	if ((fp = fopen(file, "r")) == NULL) {
+		return 2;
+	}
+
 	while ((c = fgetc(fp)) != EOF) {
 		if (isspace(c) != 0) { // We've got a word
 			if (strlen(word) > 0) { // In case multiple whitespaces btwn words
@@ -73,5 +73,5 @@ void *read_doc(void *ptr)
 		free(*(words+i));
 	}
 
-	return NULL;
+	return 0;
 }
