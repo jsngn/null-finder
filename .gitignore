@@ -3,4 +3,4 @@
 *.dSYM
 core
 stocks
-test
+resources/USVideos.csv

@@ -47,7 +47,7 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 {
 	if (table != NULL && key != NULL && val != NULL) {
 		unsigned long slot_i = jenkins_one_at_a_time_hash(key, table->slots_n);
-
+		
 		if (table->slots[slot_i] == NULL) {
 			table->slots[slot_i] = malloc(sizeof(slot_t));
 			
@@ -91,7 +91,7 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 static item_t *get_item(slot_t *slot, const char *key)
 {
 	if (slot != NULL && key != NULL) {
-		item_t *found;
+		item_t *found = slot->head;
 
 		while (found != NULL) {
 			if (strcmp(found->key, key) == 0) {
@@ -149,8 +149,25 @@ void hashtable_free(hashtable_t *table)
 				free(table->slots[i]);
 			}
 		}
-
+		free(table->slots);
 		free(table);
+	}
+}
+
+void hashtable_print(hashtable_t *table)
+{
+	if (table != NULL) {
+		for (int i = 0; i < table->slots_n; i++) {
+			printf("\n%d: ", i);
+			if (table->slots[i] != NULL) {
+				item_t *node = table->slots[i]->head;
+
+				while (node != NULL) {
+					printf("%s, ", node->key);
+					node = node->next;
+				}
+			}
+		}
 	}
 }
 
@@ -168,5 +185,5 @@ unsigned long jenkins_one_at_a_time_hash(const char* key, int size) {
   	hash ^= (hash >> 11);
   	hash += (hash << 15);
 
-  	return hash;
+  	return hash % size;
 }

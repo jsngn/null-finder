@@ -14,6 +14,8 @@ void *hashtable_find(hashtable_t *table, const char *key);
 
 void hashtable_free(hashtable_t *table);
 
+void hashtable_print(hashtable_t *table);
+
 unsigned long jenkins_one_at_a_time_hash(const char* key, int size);
 
 #endif
