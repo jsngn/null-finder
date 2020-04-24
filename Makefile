@@ -2,9 +2,9 @@
 # Josephine Nguyen, April 2020
 
 PROG = find_null
-OBJS = find_null.o ./resources/hashtable.o
+OBJS = find_null.o ./resources/hashtable.o ./csv_data.o ./libcsv-3.0.3/libcsv.o
 
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -I./resources
+CFLAGS = -Wall -pedantic -std=c11 -ggdb -I./resources -I./libcsv-3.0.3
 CC = gcc
 
 $(PROG): $(OBJS)
