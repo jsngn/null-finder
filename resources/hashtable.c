@@ -174,8 +174,9 @@ void hashtable_print(hashtable_t *table)
 unsigned long jenkins_one_at_a_time_hash(const char* key, int size) {
 	unsigned long i = 0;
 	unsigned hash = 0;
-	
-	while (i != size) {
+	int len = strlen(key);
+
+	while (i != len) {
 		hash += key[i++];
       		hash += (hash << 10);
       		hash ^= (hash >> 6);

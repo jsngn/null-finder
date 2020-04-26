@@ -14,10 +14,11 @@
 #include "csv_data.h"
 
 int validate_args(int argc, char *argv[]);
-int read_nulls(char *file, hashtable_t *null_words);
+int read_nulls(char *file, char **null_words);
 int read_csv(char *argv[]);
 void on_field_read (void *s, size_t len, void *data);
 void on_row_read (int c, void *data);
+int get_word_count(char *string, size_t len);
 
 int main(int argc, char *argv[])
 {
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
 
 int validate_args(int argc, char *argv[])
 {
-	if (argc != 3) {
+	if (argc != 4) {
 		fprintf(stderr, "Invalid usage.\n");
 		return 1;
 	}
@@ -41,15 +42,15 @@ int validate_args(int argc, char *argv[])
 	return 0;
 }
 
-int read_nulls(char *file, hashtable_t *null_words)
+int read_nulls(char *file, char **null_words)
 {
 	if (file != NULL && null_words != NULL) {
 		FILE *fp; // File we read from
 		int c; // Each char we read from file, one at a time
 		char *word = calloc(50, sizeof(char));
 		*word = '\0'; // Just to be safe
-		char *dummy = calloc(1, sizeof(char)); // Dummy item to store w/ null vals
-	
+		int words_idx = 0; // Index in null_words to insert into	
+
 		if ((fp = fopen(file, "r")) == NULL) {
 			return 4;
 		}
@@ -57,16 +58,11 @@ int read_nulls(char *file, hashtable_t *null_words)
 		while ((c = fgetc(fp)) != EOF) {
 			if (c == '\n') { // We've got a null word
 				if (strlen(word) > 0) { // In case multiple whitespaces btwn words
-					hashtable_insert(null_words, word, dummy);
-					dummy = calloc(1, sizeof(char));
-					if (dummy == NULL) {
-						fclose(fp);
-						return 4;
-					}
+					*(null_words + words_idx) = word;
+					words_idx++;
 					word = calloc(50, sizeof(char));
 					if (word == NULL) {
 						fclose(fp);
-						free(dummy);
 						return 4;
 					}
 					*word = '\0';
@@ -80,7 +76,6 @@ int read_nulls(char *file, hashtable_t *null_words)
 				*(word+len_so_far+1) = '\0';
 			}
 		}
-		free(dummy); // Extra dummy at the end
 		free(word); // For extra word allocated just before EOF
 		fclose(fp);
 		return 0;
@@ -92,26 +87,23 @@ int read_nulls(char *file, hashtable_t *null_words)
 
 int read_csv(char *argv[])
 {
-	hashtable_t *null_words;
+	char **null_words;
 	FILE *fp; // CSV
 	char line[2048];
 	struct csv_parser csv_obj;
 	csv_data_t *csv_info;
 	size_t bytes_read;
 
-	// Create hashtable first
-	null_words = hashtable_new(21);
+	null_words = calloc(16, sizeof(char*));
 	if (null_words == NULL) {
-		return 4; 
+		return 4;
 	}
-
 	read_nulls(argv[1], null_words);
-
-	hashtable_print(null_words);	
 	
 	// Read from csv
-	
-	csv_info = csv_data_new(null_words);
+	char* rem;
+	int rows = (int)strtol(argv[3], &rem, 10);
+	csv_info = csv_data_new(null_words, rows);
 	if (csv_info == NULL) {
 		return 4;
 	}
@@ -131,7 +123,11 @@ int read_csv(char *argv[])
 	}
 
 	fclose(fp);
-	hashtable_free(null_words);
+	for (int i = 0; i < 16; i++) {
+		printf("%s\n", null_words[i]);
+		free(null_words[i]);
+	}
+	free(null_words);
 
 	return 0;
 }
@@ -152,9 +148,14 @@ void on_field_read (void *s, size_t len, void *data)
 	if ((column_to_nulls = csv_data_get_column_to_nulls(info)) != NULL) {
 		
 	}*/
+	if (csv_data_get_cols_n(info) == 0) {return;} // The rest is for 2nd+ rows
+	
 	char *s_char = (char *)s;
 	char *field = calloc((len+1), sizeof(char));
 	int len_so_far = 0;
+	char **null_words;
+	hashtable_t **column_to_nulls;
+
 	while (len) {
 		len_so_far = strlen(field);
 		*(field+len_so_far) = *(s_char);
@@ -162,11 +163,22 @@ void on_field_read (void *s, size_t len, void *data)
 		s_char++;
 		len--;
 	}
+	
 	//printf("%s\n", field);
-	if (strstr(field, "none") != NULL && strlen(field) < 50) {
-		printf("%s\n", field);
+	null_words = csv_data_get_nulls(info);
+	column_to_nulls = csv_data_get_column_to_nulls(info);
+
+	for (int i = 0; i < 16; i++) {
+		char *curr = *(null_words+i);
+		if (strstr(field, curr) != NULL && get_word_count(field, strlen(field)) < 3 && strlen(field) < 10 && strlen(field) < (strlen(curr) * 2)) {
+			char *dummy = malloc(sizeof(char));
+		
+			if (hashtable_insert(*(column_to_nulls+csv_data_get_col_curr(info)-1), field, dummy) == 0 ) {
+			printf("%s %s\n", field, curr);
+			}
+		}
 	}
-	free(field);
+	//free(field);
 }
 
 void on_row_read (int c, void *data)
@@ -175,20 +187,41 @@ void on_row_read (int c, void *data)
 	printf("\n");
 	printf("%d\n", *((int*)data));
 	*((int*)data) = 0;*/
+	hashtable_t **column_to_nulls;
 	csv_data_t *info = (csv_data_t*)data;
+
 	if (csv_data_get_cols_n(info) == 0) {
 		if (csv_data_set_cols_n(info, csv_data_get_col_curr(info)) == csv_data_get_col_curr(info)) {
-			if (csv_data_new_columns(info) == NULL) {
+			/*if (csv_data_new_columns(info) == NULL) {
+				fprintf(stderr, "Malloc error\n");
+				return;
+			}*/
+			if ((column_to_nulls = csv_data_new_column_to_nulls(info)) == NULL) {
 				fprintf(stderr, "Malloc error\n");
 				return;
 			}
-			if (csv_data_new_column_to_nulls(info) == NULL) {
-				fprintf(stderr, "Malloc error\n");
-				return;
+
+			for (int i = 0; i < csv_data_get_cols_n(info); i++) {
+				if ((*(column_to_nulls+i) = hashtable_new(csv_data_get_rows_n(info) * 2)) == NULL) {
+					fprintf(stderr, "Malloc error for column_to_nulls\n");
+					return;
+				}
 			}
+
 		}
 		printf("%d\n", csv_data_get_cols_n(info));
 	}
 	csv_data_set_col_curr(info, 0);
 	
+}
+
+int get_word_count(char *string, size_t len)
+{
+	int c = 1;
+	for (int i = 0; i < len; i++) {
+		if (isspace(*(string+i)) != 0) {
+			c++;
+		}
+	}
+	return c;
 }

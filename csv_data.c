@@ -4,14 +4,15 @@
 #include "hashtable.h"
 
 typedef struct csv_data {
+	int rows_n; // Num of rows in file
 	int cols_n; // Num of cols in file
 	int col_curr; // Current column # whose field we're reading
 	hashtable_t **columns; // Each hashtable in array reps a column, in each column table key is val, val is freq
-	hashtable_t *column_to_nulls; // Each key is column, val is char **array of possible null values
-	hashtable_t *nulls;
+	hashtable_t **column_to_nulls; // Each key is column, val is char **array of possible null values
+	char **nulls;
 } csv_data_t;
 
-csv_data_t *csv_data_new(hashtable_t *nulls)
+csv_data_t *csv_data_new(char **nulls, int rows)
 {
 	if (nulls == NULL) {
 		return NULL;
@@ -22,6 +23,7 @@ csv_data_t *csv_data_new(hashtable_t *nulls)
 		return NULL;
 	}
 	
+	new->rows_n = rows;
 	new->cols_n = 0;
 	new->col_curr = 0;
 	new->columns = NULL;
@@ -29,6 +31,12 @@ csv_data_t *csv_data_new(hashtable_t *nulls)
 	new->nulls = nulls;
 
 	return new;
+}
+
+int csv_data_get_rows_n(csv_data_t *csv)
+{
+	if (csv != NULL) {return csv->rows_n;}
+	return -1;
 }
 
 int csv_data_get_cols_n(csv_data_t *csv)
@@ -79,16 +87,16 @@ hashtable_t **csv_data_new_columns(csv_data_t *csv)
 	return NULL;
 }
 
-hashtable_t *csv_data_get_column_to_nulls(csv_data_t *csv)
+hashtable_t **csv_data_get_column_to_nulls(csv_data_t *csv)
 {
 	if (csv != NULL) {return csv->column_to_nulls;}
 	return NULL;
 }
 
-hashtable_t *csv_data_new_column_to_nulls(csv_data_t *csv)
+hashtable_t **csv_data_new_column_to_nulls(csv_data_t *csv)
 {
 	if (csv != NULL) {
-		csv->column_to_nulls = hashtable_new(csv->cols_n);
+		csv->column_to_nulls = calloc(csv->cols_n, sizeof(hashtable_t*));
 		if (csv->column_to_nulls == NULL) {
 			return NULL;
 		}
@@ -97,7 +105,7 @@ hashtable_t *csv_data_new_column_to_nulls(csv_data_t *csv)
 	return NULL;
 }
 
-hashtable_t *csv_data_get_nulls(csv_data_t *csv)
+char **csv_data_get_nulls(csv_data_t *csv)
 {
 	if (csv != NULL) {return csv->nulls;}
 	return NULL;
