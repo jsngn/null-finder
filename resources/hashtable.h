@@ -12,6 +12,8 @@ int hashtable_insert(hashtable_t *table, char *key, void *item);
 
 void *hashtable_find(hashtable_t *table, const char *key);
 
+void hashtable_iterate(hashtable_t *table, void *data, void (*func)(void *data, const char *key, void *item));
+
 void hashtable_free(hashtable_t *table);
 
 void hashtable_print(hashtable_t *table);

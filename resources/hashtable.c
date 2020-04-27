@@ -125,6 +125,22 @@ void *hashtable_find(hashtable_t *table, const char *key)
 	}
 }
 
+void hashtable_iterate(hashtable_t *table, void *data, void (*func)(void *data, const char *key, void *val))
+{
+	if (table != NULL && func != NULL) {
+		for (int i = 0; i < table->slots_n; i++) {
+			if (table->slots[i] != NULL) {
+				item_t *node = table->slots[i]->head;
+
+				while (node != NULL) {
+					(*func)(data, node->key, node->val);
+					node = node->next;
+				}
+			}
+		}
+	}
+}
+
 void hashtable_free(hashtable_t *table)
 {
 	if (table != NULL) {
