@@ -19,7 +19,10 @@ int read_csv(char *argv[]);
 void on_field_read (void *s, size_t len, void *data);
 void on_row_read (int c, void *data);
 int get_word_count(char *string, size_t len);
-void *get_occurrence_probability(void *data, const char *key, void *val);
+void get_occurrence_probability(void *data, const char *key, void *val);
+void print_probabilities(void *data, const char *key, void *val);
+void find_nulls_by_probabilities(void *data, const char *key, void *val);
+void print_nulls(void *data, const char *key, void *val);
 
 int main(int argc, char *argv[])
 {
@@ -90,7 +93,7 @@ int read_csv(char *argv[])
 {
 	char **null_words;
 	FILE *fp; // CSV
-	char line[2048];
+	char line[5120];
 	struct csv_parser csv_obj;
 	csv_data_t *csv_info;
 	size_t bytes_read;
@@ -131,40 +134,78 @@ int read_csv(char *argv[])
 	if (columns == NULL) {
 		return 4;
 	}
+
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		hashtable_iterate(*(columns+i), &rows, get_occurrence_probability);
+		hashtable_iterate(*(columns+i), *(column_to_nulls+i), find_nulls_by_probabilities);
+	}
+
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		printf("COLUMN %d: \n", i+1);
+		hashtable_iterate(*(column_to_nulls+i), NULL, print_nulls);	
+		printf("\n");
+	}
 	
-	/*for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
-		*(columns+i)
-	}*/
-
-	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
-		printf("%d -------------", i);
-		hashtable_print(*(column_to_nulls+i));
-	}
-	printf("-----------");
-	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
-		printf("%d -------------", i);
-		hashtable_print(*(columns+i));	
-	}
-
-
+	csv_fini(&csv_obj, on_field_read, on_row_read, csv_info);
+	csv_free(&csv_obj);
 	fclose(fp);
 	for (int i = 0; i < 16; i++) {
 		printf("%s\n", null_words[i]);
 		free(null_words[i]);
 	}
 	free(null_words);
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		hashtable_free(*(column_to_nulls+i));
+	}
+	free(column_to_nulls);
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		hashtable_free(*(columns+i));
+	}
+	free(columns);
+	free(csv_info);
 
 	return 0;
 }
 
-void *get_occurrence_probability(void *data, const char *key, void *val)
+void print_nulls(void *data, const char *key, void *val)
+{
+	if (key != NULL) {
+		printf("%s, ", key);
+	}
+}
+
+void find_nulls_by_probabilities(void *data, const char *key, void *val)
+{
+	if (data != NULL && key != NULL && val != NULL) {
+		hashtable_t *column_nulls = (hashtable_t *)data;
+		float *prob = (float *)val;
+		char *field_cp = (char *)key;
+		if (*prob < 0.005 && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10)  {
+			char *dummy = malloc(sizeof(char));
+			char *key_cp = calloc(strlen(key)+1, sizeof(char));
+			strcpy(key_cp, key);	
+			if (hashtable_insert(column_nulls, key_cp, dummy) != 0) {
+				free(dummy);
+				free(key_cp);
+			}
+		}
+	}
+}
+
+void print_probabilities(void *data, const char *key, void *val)
+{
+	if (key != NULL && val != NULL) {
+		printf("%s : %f\n", (char *)key, *((float *)val));
+	}
+}
+
+void get_occurrence_probability(void *data, const char *key, void *val)
 {
 	if (data != NULL && val != NULL) {
 		int *total = (int *)data;
 		float *prob = (float *)val;
 		*(prob) = *(prob) / (float)(*(total));
 	}
-	return val;
 }
 
 void on_field_read (void *s, size_t len, void *data)
@@ -200,6 +241,9 @@ void on_field_read (void *s, size_t len, void *data)
 		len--;
 	}
 	
+	char *field_cp = calloc(strlen(field)+1, sizeof(char));
+	strcpy(field_cp, field);
+
 	//printf("%s\n", field);
 	null_words = csv_data_get_nulls(info);
 	column_to_nulls = csv_data_get_column_to_nulls(info);
@@ -215,24 +259,30 @@ void on_field_read (void *s, size_t len, void *data)
 		if (count != NULL) {
 			++*(count);
 		}
+		free(field);
 	//	printf("HERE: %f\n", *count);
 	}
 	else if (stat == 4) {
+		free(field);
 		free(count);
 		return;
 	}
-
+	
 	for (int i = 0; i < 16; i++) {
 		char *curr = *(null_words+i);
-		if (strstr(field, curr) != NULL && get_word_count(field, strlen(field)) < 3 && strlen(field) < 10 && strlen(field) < (strlen(curr) * 2)) {
+		if (strstr(field_cp, curr) != NULL && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10 && strlen(field_cp) < (strlen(curr) * 2)) {
 			char *dummy = malloc(sizeof(char));
 		
-			if (hashtable_insert(*(column_to_nulls+csv_data_get_col_curr(info)-1), field, dummy) == 0 ) {
-				//printf("%d: %s\n", csv_data_get_col_curr(info), field);
+			if (hashtable_insert(*(column_to_nulls+csv_data_get_col_curr(info)-1), field_cp, dummy) == 0) {
+				return;
+			}
+			else {
+				free(dummy);
 			}
 		}
 	}
-	//free(field);
+
+	free(field_cp);
 }
 
 void on_row_read (int c, void *data)
@@ -272,7 +322,6 @@ void on_row_read (int c, void *data)
 			}
 
 		}
-		printf("%d\n", csv_data_get_cols_n(info));
 	}
 	csv_data_set_col_curr(info, 0);
 	
