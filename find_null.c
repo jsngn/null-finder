@@ -97,7 +97,9 @@ int read_csv(char *argv[])
 	struct csv_parser csv_obj;
 	csv_data_t *csv_info;
 	size_t bytes_read;
-
+	float **avg_probabilities;
+	
+	// Read from file of pre-defined null words
 	null_words = calloc(16, sizeof(char*));
 	if (null_words == NULL) {
 		return 4;
@@ -125,7 +127,11 @@ int read_csv(char *argv[])
 			return 4;
 		}
 	}
-
+	
+	avg_probabilities = csv_data_avg_probabilities_new(csv_info);
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		printf("%d %f\n", i, **(avg_probabilities+i));
+	}
 	hashtable_t **column_to_nulls = csv_data_get_column_to_nulls(csv_info);
 	if (column_to_nulls == NULL) {
 		return 4;
@@ -135,9 +141,15 @@ int read_csv(char *argv[])
 		return 4;
 	}
 
+	/*for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		hashtable_print(*(columns+i));
+	}*/
+	
 	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		csv_data_set_col_curr(csv_info, i);
 		hashtable_iterate(*(columns+i), &rows, get_occurrence_probability);
-		hashtable_iterate(*(columns+i), *(column_to_nulls+i), find_nulls_by_probabilities);
+		hashtable_iterate(*(columns+i), csv_info, find_nulls_by_probabilities);
+		//hashtable_iterate(*(columns+i), NULL, print_probabilities);
 	}
 
 	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
@@ -146,11 +158,11 @@ int read_csv(char *argv[])
 		printf("\n");
 	}
 	
+	// Clean up
 	csv_fini(&csv_obj, on_field_read, on_row_read, csv_info);
 	csv_free(&csv_obj);
 	fclose(fp);
 	for (int i = 0; i < 16; i++) {
-		printf("%s\n", null_words[i]);
 		free(null_words[i]);
 	}
 	free(null_words);
@@ -161,6 +173,10 @@ int read_csv(char *argv[])
 	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
 		hashtable_free(*(columns+i));
 	}
+	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+		free(*(avg_probabilities+i));
+	}
+	free(avg_probabilities);
 	free(columns);
 	free(csv_info);
 
@@ -177,10 +193,16 @@ void print_nulls(void *data, const char *key, void *val)
 void find_nulls_by_probabilities(void *data, const char *key, void *val)
 {
 	if (data != NULL && key != NULL && val != NULL) {
-		hashtable_t *column_nulls = (hashtable_t *)data;
+		csv_data_t *info = (csv_data_t *)data;
+		hashtable_t *column_nulls = *(csv_data_get_column_to_nulls(info) + csv_data_get_col_curr(info));
+		float *avg = *(csv_data_get_avg_probabilities(info) + csv_data_get_col_curr(info));
 		float *prob = (float *)val;
 		char *field_cp = (char *)key;
-		if (*prob < 0.005 && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10)  {
+		if (((*avg < 0.5 && *prob <= *avg * 0.02) || (*avg >= 0.5 && *prob < *avg * 0.02)) && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10)  {
+			/*if (csv_data_get_col_curr(info)+1 == 11) {
+				printf("key: %s prob: %f avg: %f\n", field_cp, *prob, *avg);
+			}*/
+
 			char *dummy = malloc(sizeof(char));
 			char *key_cp = calloc(strlen(key)+1, sizeof(char));
 			strcpy(key_cp, key);	

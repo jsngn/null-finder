@@ -10,7 +10,11 @@ typedef struct csv_data {
 	hashtable_t **columns; // Each hashtable in array reps a column, in each column table key is val, val is freq
 	hashtable_t **column_to_nulls; // Each key is column, val is char **array of possible null values
 	char **nulls;
+	float **avg_probabilities;
 } csv_data_t;
+
+static void count_unique_rows(void *arg, const char *key, void *val);
+
 
 csv_data_t *csv_data_new(char **nulls, int rows)
 {
@@ -29,6 +33,7 @@ csv_data_t *csv_data_new(char **nulls, int rows)
 	new->columns = NULL;
 	new->column_to_nulls = NULL;
 	new->nulls = nulls;
+	new->avg_probabilities = NULL;
 
 	return new;
 }
@@ -108,5 +113,41 @@ hashtable_t **csv_data_new_column_to_nulls(csv_data_t *csv)
 char **csv_data_get_nulls(csv_data_t *csv)
 {
 	if (csv != NULL) {return csv->nulls;}
+	return NULL;
+}
+
+float **csv_data_avg_probabilities_new(csv_data_t *csv)
+{	
+	if (csv != NULL) {
+		csv->avg_probabilities = calloc(csv->cols_n, sizeof(float*));
+		if (csv->avg_probabilities == NULL) {
+			return NULL;
+		}
+
+		for (int i = 0; i < csv->cols_n; i++) {
+			float *avg = malloc(sizeof(float));
+			int sum = 0;
+			hashtable_iterate(*(csv->columns+i), &sum, count_unique_rows);
+			*(avg) = (float)1 / (float)sum;
+			csv->avg_probabilities[i] = avg;
+		}
+
+		return csv->avg_probabilities;
+	}
+	else {
+		return NULL;
+	}
+}
+
+static void count_unique_rows(void *arg, const char *key, void *val)
+{
+	if (key != NULL && val != NULL) {
+		++*((int *)arg);
+	}
+}
+
+float **csv_data_get_avg_probabilities(csv_data_t *csv)
+{
+	if (csv != NULL) {return csv->avg_probabilities;}
 	return NULL;
 }

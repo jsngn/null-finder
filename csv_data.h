@@ -29,4 +29,8 @@ hashtable_t **csv_data_new_column_to_nulls(csv_data_t *csv);
 
 char **csv_data_get_nulls(csv_data_t *csv);
 
+float **csv_data_avg_probabilities_new(csv_data_t *csv);
+
+float **csv_data_get_avg_probabilities(csv_data_t *csv);
+
 #endif
