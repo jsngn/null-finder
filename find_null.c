@@ -129,9 +129,9 @@ int read_csv(char *argv[])
 	}
 	
 	avg_probabilities = csv_data_avg_probabilities_new(csv_info);
-	for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
+	/*for (int i = 0; i < csv_data_get_cols_n(csv_info); i++) {
 		printf("%d %f\n", i, **(avg_probabilities+i));
-	}
+	}*/
 	hashtable_t **column_to_nulls = csv_data_get_column_to_nulls(csv_info);
 	if (column_to_nulls == NULL) {
 		return 4;
@@ -303,7 +303,15 @@ void on_field_read (void *s, size_t len, void *data)
 			}
 		}
 	}
-
+	if (strlen(field_cp) == 0) {
+		char *empty = calloc(8, sizeof(char));
+		strcpy(empty, "<empty>");
+		char *dummy = malloc(sizeof(char));
+		if (hashtable_insert(*(column_to_nulls+csv_data_get_col_curr(info)-1), empty, dummy) != 0) {
+			free(empty);
+			free(dummy);
+		}
+	}
 	free(field_cp);
 }
 
