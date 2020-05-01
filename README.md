@@ -2,7 +2,7 @@
 
 Program that takes in a CSV file and outputs a list of potential null-equivalent words in the file.
 
-Intended to be used for uncleaned data sets where the different words that may indicate a null value are unknown.
+Intended to be used for uncleaned data sets where the different words that may indicate a null value are unknown. Inevitably there is some noise in the results, nonetheless they are rather helpful as a guide to help you clean your data!
 
 ## Compilation
 
