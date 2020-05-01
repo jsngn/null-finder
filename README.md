@@ -31,6 +31,8 @@ COLUMN 4:
 n/a, <empty>,
 ```
 
+No changes were made to this data set; all credits to original author. See link for author & license info.
+
 Running on [USVideos.csv](https://www.kaggle.com/datasnaek/youtube-new#USvideos.csv):
 
 ```
