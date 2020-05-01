@@ -31,7 +31,7 @@ COLUMN 4:
 n/a, <empty>,
 ```
 
-No changes were made to this data set; all credits to original author. See link for author & license info.
+No changes were made to this data set; all credits to original author. See link for [author](https://www.kaggle.com/nikdavis) & [license](https://creativecommons.org/licenses/by/4.0/) info.
 
 Running on [USVideos.csv](https://www.kaggle.com/datasnaek/youtube-new#USvideos.csv):
 
