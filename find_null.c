@@ -49,8 +49,28 @@ int main(int argc, char *argv[])
  */
 int validate_args(int argc, char *argv[])
 {
+	FILE *fp; // Make sure can open files
+	// Make sure rows # valid
+	int rows_val = 0;
+	int rows_len = 0;
+
 	if (argc != 4) {
 		fprintf(stderr, "Usage: ./find_null null_file csv_file rows_num\n");
+		return 1;
+	}
+	if ((fp = fopen(argv[1], "r")) == NULL) {
+		fprintf(stderr, "1st arg must be readable file\n");
+		return 1;
+	}
+	fclose(fp);
+	fp = NULL;
+	if ((fp = fopen(argv[2], "r")) == NULL) {
+		fprintf(stderr, "2nd arg must be readable file\n");
+		return 1;
+	}
+	fclose(fp);
+	if (sscanf(argv[3], "%d %n", &rows_val, &rows_len) != 1 || rows_len != strlen(argv[3])) {
+		fprintf(stderr, "3rd arg must be valid int\n");
 		return 1;
 	}
 
