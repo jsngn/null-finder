@@ -1,24 +1,34 @@
+/* Hashtable data structure's .c file
+ * See .h file for more details on each function
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hashtable.h"
 
+/* Local types */
+/* Every hashtable is essentially an array of linked lists*/
+
+// Node of linked list
 typedef struct item {
 	char *key;
 	void *val;
 	struct item *next;
 } item_t;
 
+// Holds head of linked list, number of slot_t in a table == size of table
 typedef struct slot {
 	item_t *head;
 } slot_t;
 
-
+/* Global type */
 typedef struct hashtable {
 	slot_t **slots;
 	int slots_n;
 } hashtable_t;
 
+// Local function declaration
 static item_t *get_item(slot_t *slot, const char *key);
 
 hashtable_t *hashtable_new(int slots_n)
@@ -30,7 +40,7 @@ hashtable_t *hashtable_new(int slots_n)
 		}
 		
 		new->slots_n = slots_n;
-		new->slots = calloc(slots_n, sizeof(slot_t*));
+		new->slots = calloc(slots_n, sizeof(slot_t*)); // Nodes made as we insert later
 		if (new->slots == NULL) {
 			free(new);
 			return NULL;
@@ -61,7 +71,7 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 		if (table->slots[slot_i] != NULL) {
 			item_t *new;
 
-			if (get_item(table->slots[slot_i], key) != NULL) {
+			if (get_item(table->slots[slot_i], key) != NULL) { // Existing key
 				return 5;
 			}
 			
@@ -77,30 +87,35 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 			table->slots[slot_i]->head = new;
 		}
 		else {
-			return 4;
+			return 2;
 		}
 
 	}
 	else {
-		return 3;
+		return 2;
 	}
 
 	return 0;
 }
 
+/* Retrieves node associated w/ a key in table if any, otherwise NULL
+ * @param slot the slot in table to look in
+ * @key key to look for
+ * @return node ptr or NULL
+ */
 static item_t *get_item(slot_t *slot, const char *key)
 {
 	if (slot != NULL && key != NULL) {
 		item_t *found = slot->head;
 
-		while (found != NULL) {
+		while (found != NULL) { // Go through whole list
 			if (strcmp(found->key, key) == 0) {
 				return found;
 			}
 			found = found->next;
 		}
 
-		return NULL;
+		return NULL; // Not found
 	}
 	else {
 		return NULL;
@@ -118,7 +133,7 @@ void *hashtable_find(hashtable_t *table, const char *key)
 				return found->val;
 			}
 		}
-		return NULL;
+		return NULL; // Not found
 	}
 	else {
 		return NULL;
@@ -154,7 +169,7 @@ void hashtable_free(hashtable_t *table)
 					}
 					
 					if (node->val != NULL) {
-						free(node->val);
+						free(node->val); // Val always primitive type for this proj, just free here
 					}
 					
 					item_t *next = node->next;

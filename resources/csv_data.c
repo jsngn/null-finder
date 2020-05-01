@@ -1,3 +1,8 @@
+/* Struct to hold all info about a csv needed for detecting null-equivalent words in file
+ * The .c file
+ * Josephine Nguyen, April 2020
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "csv_data.h"
@@ -6,19 +11,21 @@
 typedef struct csv_data {
 	int rows_n; // Num of rows in file
 	int cols_n; // Num of cols in file
-	int col_curr; // Current column # whose field we're reading
-	hashtable_t **columns; // Each hashtable in array reps a column, in each column table key is val, val is freq
-	hashtable_t **column_to_nulls; // Each key is column, val is char **array of possible null values
-	char **nulls;
-	float **avg_probabilities;
+	int col_curr; // Current column # we're processing (can be for anything: reading fields, iterating through hashtable items, etc.)
+	hashtable_t **columns; // Each hashtable in array reps a column, in each column table key is field/word, val is freq at
+				//which word appears in col (at the end change to probability occur in col)
+	hashtable_t **column_to_nulls; // Each hashtable in array reps a column, in each column table word is key, val is dummy item
+	char **nulls; // Array of strings that are pre-defined null-equivalent words (found in resources/nulls)
+	float **avg_probabilities; // Array of floats, each float is avg probability at which words appear that respective col
+				//(0th item is 1st col, so on)
 } csv_data_t;
 
+// Local function
 static void count_unique_rows(void *arg, const char *key, void *val);
-
 
 csv_data_t *csv_data_new(char **nulls, int rows)
 {
-	if (nulls == NULL) {
+	if (nulls == NULL) { // Array must be prepopulated!!!
 		return NULL;
 	}
 
@@ -139,6 +146,11 @@ float **csv_data_avg_probabilities_new(csv_data_t *csv)
 	}
 }
 
+/* To count number of items in hashtable; used as func in hashtable_iterate
+ * @param arg running total of items
+ * @param key word
+ * @param val dummy item
+ */
 static void count_unique_rows(void *arg, const char *key, void *val)
 {
 	if (key != NULL && val != NULL) {

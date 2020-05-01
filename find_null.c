@@ -415,6 +415,7 @@ void on_row_read (int c, void *data)
 /* Calculates how many words in a string based on number of whitespace
  * @param string word
  * @param len length of word
+ * @return number of words
  */
 int get_word_count(char *string, size_t len)
 {
