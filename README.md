@@ -2,7 +2,7 @@
 
 Program that takes in a CSV file and outputs a list of potential null-equivalent words in the file.
 
-Intended to be used for uncleaned data sets where the different words that may indicate a null value are unknown. Inevitably there is some noise in the results, nonetheless they are rather helpful as a guide to help you clean your data!
+Intended to be used for uncleaned or semi-cleaned data sets where the different words that may indicate a null value are unknown. Inevitably there is some noise in the results, nonetheless they are rather helpful as a guide to help you clean your data!
 
 ## Compilation
 
@@ -18,7 +18,20 @@ where `null_file` should be `resources/nulls`, `csv_file` is the uncleaned datas
 
 ## Examples
 
-Running on USVideos.csv:
+Running on [steam_support_info.csv](https://www.kaggle.com/nikdavis/steam-store-games#steam_support_info.csv):
+
+```
+COLUMN 1:
+
+COLUMN 2:
+<empty>,
+COLUMN 3:
+<empty>,
+COLUMN 4:
+n/a, <empty>,
+```
+
+Running on [USVideos.csv](https://www.kaggle.com/datasnaek/youtube-new#USvideos.csv):
 
 ```
 COLUMN 1:
@@ -53,19 +66,6 @@ COLUMN 15:
 True,
 COLUMN 16:
 <empty>, 
-```
-
-Running on steam_support_info.csv:
-
-```
-COLUMN 1:
-
-COLUMN 2:
-<empty>,
-COLUMN 3:
-<empty>,
-COLUMN 4:
-n/a, <empty>,
 ```
 
 ## Output
