@@ -22,6 +22,7 @@ void get_occurrence_probability(void *data, const char *key, void *val);
 void print_probabilities(void *data, const char *key, void *val);
 void find_nulls_by_probabilities(void *data, const char *key, void *val);
 void print_nulls(void *data, const char *key, void *val);
+void get_lowercase(char *string, size_t len);
 
 /* Validates args, reads CSV and prints possible null-equivalent phrases by column #
  * @param argc # args passed
@@ -361,14 +362,18 @@ void on_field_read (void *s, size_t len, void *data)
 		free(count);
 	}
 	
+	char *field_lc = calloc(strlen(field_cp)+1, sizeof(char));
+	strcpy(field_lc, field_cp);
+	get_lowercase(field_lc, strlen(field_lc));	
 	/* Insert into column_to_nulls */
 	for (int i = 0; i < 16; i++) {
 		char *curr = *(null_words+i); // Current pre-defined null word
 		// Current null word is substring of field, word is short enough (word # and string length) absolutely & relatively compared to null word
-		if (strstr(field_cp, curr) != NULL && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10 && strlen(field_cp) < (strlen(curr) * 2)) {
+		if (strstr(field_lc, curr) != NULL && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10 && strlen(field_cp) < (strlen(curr) * 2)) {
 			char *dummy = malloc(sizeof(char));
 		
 			if (hashtable_insert(*(column_to_nulls+csv_data_get_col_curr(info)-1), field_cp, dummy) == 0) {
+				free(field_lc);
 				return;
 			}
 			else { // Clean up if unsuccessful
@@ -387,6 +392,7 @@ void on_field_read (void *s, size_t len, void *data)
 			free(dummy);
 		}
 	}
+	free(field_lc);
 	free(field_cp);
 }
 
@@ -446,4 +452,17 @@ int get_word_count(char *string, size_t len)
 		}
 	}
 	return c;
+}
+
+/* Gets lowercase string for comparison to pre-defined null words
+ * @param string word to convert to all lowercase
+ * @param length of word
+ */
+void get_lowercase(char *string, size_t len)
+{
+	if (string != NULL) {
+		for (int i = 0; i < len; i++) {
+			*(string+i) = tolower(*(string+i));
+		}
+	}
 }
