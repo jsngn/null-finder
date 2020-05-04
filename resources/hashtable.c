@@ -72,7 +72,7 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 			item_t *new;
 
 			if (get_item(table->slots[slot_i], key) != NULL) { // Existing key
-				return 5;
+				return 3;
 			}
 			
 			new = malloc(sizeof(item_t));
@@ -87,7 +87,7 @@ int hashtable_insert(hashtable_t *table, char *key, void *val)
 			table->slots[slot_i]->head = new;
 		}
 		else {
-			return 2;
+			return 4;
 		}
 
 	}

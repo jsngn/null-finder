@@ -1,5 +1,13 @@
 /* Program to take in a CSV file and give back (potential) NULL values
  * Useful for uncleaned datasets with obscure, hidden NULL values
+ *
+ * Exit status (for this program and all of its components that I wrote):
+ * 0 - success
+ * 1 - command line argument error
+ * 2 - null argument passed to function
+ * 3 - attempt to insert existing key into hashtable
+ * 4 - null returned by fopen/malloc/calloc/etc.
+ *
  * Josephine Nguyen, April 2020
  */
 
@@ -348,7 +356,7 @@ void on_field_read (void *s, size_t len, void *data)
 	float *count = malloc(sizeof(int)); // Item which we insert in, if never seen word before
 	*count = 1;
 	int stat = 0; // Track status see if successful insert
-	if ((stat = hashtable_insert(*(columns+csv_data_get_col_curr(info)-1), field, count)) == 5) { // Repeated item
+	if ((stat = hashtable_insert(*(columns+csv_data_get_col_curr(info)-1), field, count)) == 3) { // Repeated item
 		free(count);
 		count = NULL;
 		count = (hashtable_find(*(columns+csv_data_get_col_curr(info)-1), field));
