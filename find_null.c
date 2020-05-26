@@ -19,6 +19,7 @@
 #include "hashtable.h"
 #include "csv.h"
 #include "csv_data.h"
+#define NULL_NUM 16
 
 int validate_args(int argc, char *argv[]);
 int read_nulls(char *file, char **null_words);
@@ -142,7 +143,6 @@ int read_nulls(char *file, char **null_words)
 int read_csv(char *argv[])
 {
 	char **null_words; // Array to fill up w/ defined null words
-	const int null_num = 16;
 	FILE *fp; // CSV
 	char line[5120]; // Buffer for each line read from CSV file
 	struct csv_parser csv_obj; // Parser for csvlib
@@ -153,7 +153,7 @@ int read_csv(char *argv[])
 	hashtable_t **columns; // Hashtable of array of unique words in every column (every item is hashtable of word as key, probability at which they occur as value)
 	
 	// Read from file of pre-defined null words
-	null_words = calloc(null_num, sizeof(char*));
+	null_words = calloc(NULL_NUM, sizeof(char*));
 	if (null_words == NULL) {
 		return 4;
 	}
@@ -226,7 +226,7 @@ int read_csv(char *argv[])
 	csv_fini(&csv_obj, on_field_read, on_row_read, csv_info);
 	csv_free(&csv_obj);
 	fclose(fp);
-	for (int i = 0; i < null_num; i++) {
+	for (int i = 0; i < NULL_NUM; i++) {
 		free(null_words[i]);
 	}
 	free(null_words);
@@ -374,7 +374,7 @@ void on_field_read (void *s, size_t len, void *data)
 	strcpy(field_lc, field_cp);
 	get_lowercase(field_lc, strlen(field_lc));	
 	/* Insert into column_to_nulls */
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < NULL_NUM; i++) {
 		char *curr = *(null_words+i); // Current pre-defined null word
 		// Current null word is substring of field, word is short enough (word # and string length) absolutely & relatively compared to null word
 		if (strstr(field_lc, curr) != NULL && get_word_count(field_cp, strlen(field_cp)) <= 3 && strlen(field_cp) < 10 && strlen(field_cp) < (strlen(curr) * 2)) {
