@@ -26,9 +26,9 @@ COLUMN 1:
 COLUMN 2:
 <empty>,
 COLUMN 3:
-<empty>,
+N/A, NULL, <empty>,
 COLUMN 4:
-n/a, <empty>,
+NA., n/a, <empty>,
 ```
 
 No changes were made to this data set; all credits to original author. See link for [author](https://www.kaggle.com/nikdavis) & [license](https://creativecommons.org/licenses/by/4.0/) info.
